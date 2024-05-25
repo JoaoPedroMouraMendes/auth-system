@@ -1,11 +1,13 @@
-import express from 'express'
-import { Request, Response } from 'express'
+import express from "express"
+import cors from "cors"
+import route from "./src/routes"
+
 const app = express()
+app.use(cors())
+app.use(express.json())
+
+app.use('/', route)
 
 const PORT = 3000
-
-app.post('/', async (req: Request, res: Response) => {
-    res.send("Hello World")
-})
 
 app.listen(PORT, () => console.log(`Server iniciado em: http://localhost:${PORT}/`))
