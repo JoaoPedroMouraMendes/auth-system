@@ -3,6 +3,7 @@ import userService from "../services/userService"
 import passwordValidator from "../validators/passwordValidator"
 import Feedback from "../utils/feedback"
 import emailValidator from "../validators/emailValidator"
+import MailController from "../email/mailController"
 
 interface CreateUserProps {
     name: string
