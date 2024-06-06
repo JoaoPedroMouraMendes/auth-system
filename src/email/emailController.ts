@@ -1,11 +1,10 @@
 import nodemailer, { Transporter } from "nodemailer"
-import { MailOptions } from "nodemailer/lib/json-transport"
 import SMTPTransport from "nodemailer/lib/smtp-transport"
 import dotenv from "dotenv"
 
 dotenv.config()
 
-export default class MailController {
+export default class EmailController {
     transporter: Transporter<SMTPTransport.SentMessageInfo>
     mailAddress: string = ''
 
@@ -29,16 +28,5 @@ export default class MailController {
                 pass: process.env.EMAIL_PASSWORD
             }
         }
-    }
-
-    setMailOptions(mailOptions: Omit<MailOptions, 'from'>, mailName: string = ''): MailOptions {
-        return {
-            from: `${mailName} <${this.mailAddress}>`,
-            ...mailOptions
-        }
-    }
-
-    async sendMail(mailOptions: Omit<MailOptions, 'from'>, mailName?: string) {
-        await this.transporter.sendMail(this.setMailOptions(mailOptions, mailName))
     }
 }

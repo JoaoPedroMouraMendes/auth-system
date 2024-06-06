@@ -1,11 +1,12 @@
 import { Router } from "express"
-import UserController from "../controllers/userController"
+import userController from "../controllers/userController"
 
 const route = Router()
-const userController = new UserController()
 
 route.get('/user/:id', userController.getUser)
 
 route.post('/user', userController.createUser)
+
+route.get('/user/validation/:token', userController.validateUserAccount)
 
 export default route
