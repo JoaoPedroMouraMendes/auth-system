@@ -22,7 +22,7 @@ class UserController {
     async getUser(req: Request, res: Response): Promise<Response | void> {
         try {
             const userId = req.params.id
-            const user = await userService.getUser({ id: userId})
+            const user = await userService.getUser({ id: userId })
 
             if (!user)
                 return res.status(404).json({ feedback: new Feedback(false, ['USER_NOT_FOUND']) })
@@ -93,23 +93,28 @@ class UserController {
         }
     }
 
+    // Valida a conta do usuário por meio de um token
     async validateUserAccount(req: Request, res: Response): Promise<Response | void> {
-        try {
-            const token = req.params.token
-            const SECRET = process.env.SECRET as string
-            jwt.verify(token, SECRET, (error, decoded: any) => {
+        const token = req.params.token
+        const SECRET = process.env.SECRET as string
+        jwt.verify(token, SECRET, async (error, decoded: any) => {
+            try {
                 if (error) return res.status(400).json
                     ({ feedback: new Feedback(false, ['INVALID_TOKEN'])})
 
-                userService.updateUserData(decoded.id, { validatedAccount: true })
-                return res.status(200).json({ feedback: new Feedback(true)})
-            })
-        } catch (error) {
-            console.error(`Erro ao tentar validar conta de usuário: ${error}`)
+                await userService.updateUserData(decoded.id, { validatedAccount: true })
+                return res.status(200).json({ feedback: new Feedback(true) })
+            } catch (error) {
+                console.error(`Erro ao tentar validar conta de usuário: ${error}`)
 
-            return res.status(400).json
-                ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
-        }
+                if (error instanceof Error && error.message === 'USER_NOT_FOUND')
+                    return res.status(404).json
+                        ({ feedback: new Feedback(false, ['USER_NOT_FOUND']) })
+
+                return res.status(400).json
+                    ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
+            }
+        })
     }
 }
 
