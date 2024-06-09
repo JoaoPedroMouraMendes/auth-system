@@ -74,13 +74,15 @@ class UserController {
             // Envia um email notificando a criação da conta
             const token = tokenHandler.generateToken({ id: newUser.id }, { expiresIn: '1h' })
             const link = `${process.env.URL}/user/validation/${token}`
-            await new EmailController().transporter.sendMail({
+            const emailController = new EmailController()
+            emailController.transporter.sendMail({
+                from: `Auth System<${emailController.mailAddress}>`,
                 to: email,
                 subject: 'Confirme sua conta',
                 html: `<p>Olá</p>
-                <p>Para validar sua conta acesse o link: ${link}</p>'
+                <p>Para validar sua conta clique <a href='${link}'>aqui</a></p>
                 <p><strong>
-                    Caso você não seja você que criou a conta apenas não acesse o link
+                    Caso não seja você quem criou a conta, ignore essa mensagem
                 </strong></p>`
             })
 
