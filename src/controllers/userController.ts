@@ -17,6 +17,11 @@ interface CreateUserProps {
     password: string
 }
 
+interface UserLoginProps {
+    email: string
+    password: string
+}
+
 class UserController {
     // Retorna o usuário
     async getUser(req: Request, res: Response): Promise<Response | void> {
@@ -31,9 +36,9 @@ class UserController {
         } catch (error) {
             console.error(`Erro ao tentar encontrar um usuário: ${error}`)
 
-            if (error instanceof Error && error.message === 'DATABASE_ERROR')
+            if (error instanceof Error)
                 return res.status(400).json
-                    ({ feedback: new Feedback(false, ['DATABASE_ERROR']) })
+                    ({ feedback: new Feedback(false, [error.message]) })
 
             return res.status(400).json
                 ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
@@ -71,7 +76,7 @@ class UserController {
                 name, email, password: hashedPassword
             })
 
-            // Envia um email notificando a criação da conta
+            // Envia um email para validar a conta
             const token = tokenHandler.generateToken({ id: newUser.id }, { expiresIn: '1h' })
             const link = `${process.env.URL}/user/validation/${token}`
             const emailController = new EmailController()
@@ -102,7 +107,7 @@ class UserController {
         jwt.verify(token, SECRET, async (error, decoded: any) => {
             try {
                 if (error) return res.status(400).json
-                    ({ feedback: new Feedback(false, ['INVALID_TOKEN'])})
+                    ({ feedback: new Feedback(false, ['INVALID_TOKEN']) })
 
                 await userService.updateUserData(decoded.id, { validatedAccount: true })
                 return res.status(200).json({ feedback: new Feedback(true) })
@@ -117,6 +122,32 @@ class UserController {
                     ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
             }
         })
+    }
+
+    // Verifica se o login do usuário é valido
+    async userLogin(req: Request, res: Response): Promise<Response | void> {
+        try {
+            const { email, password } = req.body as UserLoginProps
+            if (!email)
+                throw new Error('EMAIL_IS_REQUIRED')
+            if (typeof email !== 'string')
+                throw new Error('INVALID_EMAIL_TYPE')
+            if (!password)
+                throw new Error('PASSWORD_IS_REQUIRED')
+            if (typeof password !== 'string')
+                throw new Error('INVALID_PASSWORD_TYPE')
+
+            const { feedback, user } = await userService.userLogin(email, password)
+
+            return res.status(200).json({ feedback, user })
+        } catch (error) {
+            console.log(`Erro ao verificar o login de usuário: ${error}`)
+
+            if (error instanceof Error)
+                return res.status(400).json({ feedback: new Feedback(false, [error.message]) })
+
+            return res.status(400).json({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
+        }
     }
 }
 

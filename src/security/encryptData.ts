@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt'
+import bcrypt from "bcrypt"
 
 export default async function encryptData(data: string) {
     const saltRounds = 10

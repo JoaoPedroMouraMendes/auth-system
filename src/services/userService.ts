@@ -1,12 +1,16 @@
 import prismaClient from "../prisma"
 import { Prisma, User } from "@prisma/client"
 import Feedback from "../utils/feedback"
+import bcrypt from "bcrypt"
 
-type SafeUserProps = Omit<User, 'password' | 'validatedAccount'>
+interface UserLoginReturn {
+    feedback: Feedback,
+    user: Partial<User>
+}
 
 class UserService {
     // Obtem um usuário
-    async getUser(where: Partial<User>): Promise<SafeUserProps | null> {
+    async getUser(where: Partial<User>): Promise<Partial<User> | null> {
         try {
             return await prismaClient.user.findFirst({
                 where: where,
@@ -18,6 +22,9 @@ class UserService {
                 }
             })
         } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023')
+                throw new Error('USER_NOT_FOUND')
+
             throw new Error('DATABASE_ERROR')
         }
     }
@@ -59,16 +66,24 @@ class UserService {
     }
 
     // Verifica se o login do usuário é valido
-    async userLogin(email: string, password: string): Promise<Feedback> {
-        const user = await prismaClient.user.findFirst({ where: { email } })
+    async userLogin(email: string, password: string): Promise<UserLoginReturn> {
+        try {
+            const user = await prismaClient.user.findFirst({ where: { email } })
 
-        if (!user) return new Feedback(false, ['USER_NOT_FOUND'])
+            if (!user) throw new Error('USER_NOT_FOUND')
 
-        if (user.password != password) return new Feedback(false, ['INVALID_PASSWORD'])
+            const validPassword = await bcrypt.compare(password, user.password)
+            if (!validPassword) throw new Error('INVALID_PASSWORD')
 
-        if (!user.validatedAccount) return new Feedback(false, ['ACCOUNT_NOT_VALIDATED'])
+            if (!user.validatedAccount) throw new Error('ACCOUNT_NOT_VALIDATED')
 
-        return new Feedback(true)
+            const { password: p, ...safeUser } = user
+            return { feedback: new Feedback(true), user: safeUser }
+        } catch (error) {
+            if (error instanceof Error)
+                throw new Error(error.message)
+            throw new Error('DATABASE_ERROR')
+        }
     }
 }
 
