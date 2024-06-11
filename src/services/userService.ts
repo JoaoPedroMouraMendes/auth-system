@@ -8,18 +8,15 @@ interface UserLoginReturn {
     user: Partial<User>
 }
 
+type FindUserProps = Partial<Pick<User, 'id' | 'email'>>
+
 class UserService {
     // Obtem um usuário
-    async getUser(where: Partial<User>): Promise<Partial<User> | null> {
+    async getUser(where: FindUserProps, select?: Prisma.UserSelect): Promise<User | null> {
         try {
             return await prismaClient.user.findFirst({
                 where: where,
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    created_at: true
-                }
+                select: select
             })
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023')
@@ -32,7 +29,7 @@ class UserService {
     // Verifica se o usuário já existe no banco de dados
     async checkUserExists(email: string) {
         try {
-            const user = await this.getUser({ email })
+            const user = await this.getUser({ email }, { id: true })
             return user != null
         } catch (error) {
             throw new Error('DATABASE_ERROR')
@@ -68,7 +65,7 @@ class UserService {
     // Verifica se o login do usuário é valido
     async userLogin(email: string, password: string): Promise<UserLoginReturn> {
         try {
-            const user = await prismaClient.user.findFirst({ where: { email } })
+            const user = await this.getUser({ email })
 
             if (!user) throw new Error('USER_NOT_FOUND')
 

@@ -60,12 +60,13 @@ class UserController {
             if (emailValidation.errors)
                 errors.push(...emailValidation?.errors)
 
-            // Ciptografa a senha
-            const hashedPassword = await encryptData(password)
             // Verificação se o usuário já existe
             const userExists = await userService.checkUserExists(email)
             if (userExists)
                 errors.push('USER_EXISTS')
+
+            // Ciptografa a senha
+            const hashedPassword = await encryptData(password)
 
             // Caso tenha erros não prossegue com a criação do usuário
             if (errors.length > 0)
@@ -81,7 +82,7 @@ class UserController {
             const link = `${process.env.URL}/user/validation/${token}`
             const emailController = new EmailController()
             emailController.transporter.sendMail({
-                from: `Auth System<${emailController.mailAddress}>`,
+                from: `Buddy<${emailController.mailAddress}>`,
                 to: email,
                 subject: 'Confirme sua conta',
                 html: `<p>Olá</p>
