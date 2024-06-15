@@ -40,7 +40,7 @@ class UserController {
                 return res.status(400).json
                     ({ feedback: new Feedback(false, [error.message]) })
 
-            return res.status(400).json
+            return res.status(500).json
                 ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
     }
@@ -96,7 +96,7 @@ class UserController {
         } catch (error) {
             console.error(`Erro ao tentar criar um usuário: ${error}`)
 
-            return res.status(400).json
+            return res.status(500).json
                 ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
     }
@@ -147,7 +147,7 @@ class UserController {
             if (error instanceof Error)
                 return res.status(400).json({ feedback: new Feedback(false, [error.message]) })
 
-            return res.status(400).json({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
+            return res.status(500).json({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
     }
 }
