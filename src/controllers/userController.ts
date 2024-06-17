@@ -7,7 +7,7 @@ import EmailController from "../email/emailController"
 import encryptData from "../security/encryptData"
 import dotenv from "dotenv"
 import tokenHandler from "../security/tokenHandler"
-import * as jwt from "jsonwebtoken"
+import bcrypt from "bcrypt"
 
 dotenv.config()
 
@@ -78,8 +78,8 @@ class UserController {
             })
 
             // Envia um email para validar a conta
-            const token = tokenHandler.generateToken({ id: newUser.id }, { expiresIn: '1h' })
-            const link = `${process.env.URL}/user/validation/${token}`
+            const emailToken = tokenHandler.generateToken({ id: newUser.id }, { expiresIn: '1h' })
+            const link = `${process.env.URL}/user/validation/${emailToken}`
             const emailController = new EmailController()
             emailController.transporter.sendMail({
                 from: `Buddy<${emailController.mailAddress}>`,
@@ -92,7 +92,8 @@ class UserController {
                 </strong></p>`
             })
 
-            return res.status(201).json({ feedback: new Feedback(true) })
+            const sectionToken = tokenHandler.generateToken({ email: newUser.email, password: newUser.password })
+            return res.status(201).json({ feedback: new Feedback(true), token: sectionToken })
         } catch (error) {
             console.error(`Erro ao tentar criar um usuário: ${error}`)
 
@@ -104,8 +105,7 @@ class UserController {
     // Valida a conta do usuário por meio de um token
     async validateUserAccount(req: Request, res: Response): Promise<Response | void> {
         const token = req.params.token
-        const SECRET = process.env.SECRET as string
-        jwt.verify(token, SECRET, async (error, decoded: any) => {
+        tokenHandler.verifyToken(token, async (error, decoded: any) => {
             try {
                 if (error) return res.status(400).json
                     ({ feedback: new Feedback(false, ['INVALID_TOKEN']) })
@@ -139,10 +139,49 @@ class UserController {
                 throw new Error('INVALID_PASSWORD_TYPE')
 
             const { feedback, user } = await userService.userLogin(email, password)
+            const sectionToken = tokenHandler.generateToken({ email: user.email, password: user.password })
 
-            return res.status(200).json({ feedback, user })
+            return res.status(200).json({ feedback, user, token: sectionToken })
         } catch (error) {
             console.log(`Erro ao verificar o login de usuário: ${error}`)
+
+            if (error instanceof Error)
+                return res.status(400).json({ feedback: new Feedback(false, [error.message]) })
+
+            return res.status(500).json({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
+        }
+    }
+
+    // Validação de acesso por token
+    async userLoginWithToken(req: Request, res: Response): Promise<Response | void> {
+        try {
+            const authorization = req.headers['authorization']
+            if (!authorization)
+                throw new Error('EMPTY_AUTHORIZATION')
+            const token = authorization.split(' ')[1]
+            if (!token)
+                throw new Error('EMPTY_TOKEN')
+            tokenHandler.verifyToken(token, async (error, decoded: any) => {
+                try {
+                    if (error)
+                        throw new Error('INVALID_TOKEN')
+
+                    const { feedback, user } = await userService.userLogin(decoded.email, decoded.password, true)
+                    
+                    return res.status(200).json({ feedback: feedback, user })
+                } catch (error) {
+                    console.log(`Erro ao verificar o login de usuário com token: ${error}`)
+
+                    if (error instanceof Error)
+                        return res.status(400).json
+                            ({ feedback: new Feedback(false, [error.message]) })
+    
+                    return res.status(400).json
+                        ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
+                }
+            })
+        } catch (error) {
+            console.log(`Erro ao verificar o login de usuário com token: ${error}`)
 
             if (error instanceof Error)
                 return res.status(400).json({ feedback: new Feedback(false, [error.message]) })

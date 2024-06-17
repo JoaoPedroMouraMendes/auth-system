@@ -5,6 +5,8 @@ const route = Router()
 
 route.get('/user/login', userController.userLogin)
 
+route.get('/user/login/token', userController.userLoginWithToken)
+
 route.get('/user/:id', userController.getUser)
 
 route.post('/user', userController.createUser)

@@ -63,14 +63,21 @@ class UserService {
     }
 
     // Verifica se o login do usuário é valido
-    async userLogin(email: string, password: string): Promise<UserLoginReturn> {
+    async userLogin(email: string, password: string, loginWithToken: boolean = false): Promise<UserLoginReturn> {
         try {
             const user = await this.getUser({ email })
 
             if (!user) throw new Error('USER_NOT_FOUND')
 
-            const validPassword = await bcrypt.compare(password, user.password)
-            if (!validPassword) throw new Error('INVALID_PASSWORD')
+            if (loginWithToken) {
+                if (password !== user.password) {
+                    throw new Error('INVALID_PASSWORD')
+                }
+            }
+            else {
+                const validPassword = await bcrypt.compare(password, user.password)
+                if (!validPassword) throw new Error('INVALID_PASSWORD')
+            }
 
             if (!user.validatedAccount) throw new Error('ACCOUNT_NOT_VALIDATED')
 
