@@ -2,6 +2,9 @@ import prismaClient from "../prisma"
 import { Prisma, User } from "@prisma/client"
 import Feedback from "../utils/feedback"
 import bcrypt from "bcrypt"
+import tokenHandler from "../security/tokenHandler"
+import { SignOptions } from "jsonwebtoken"
+import EmailController from "../email/emailController"
 
 interface UserLoginReturn {
     feedback: Feedback,
@@ -79,7 +82,10 @@ class UserService {
                 if (!validPassword) throw new Error('INVALID_PASSWORD')
             }
 
-            if (!user.validatedAccount) throw new Error('ACCOUNT_NOT_VALIDATED')
+            if (!user.validatedAccount) {
+                this.sendEmailToValidateAccount(user.id, user.email);
+                throw new Error('ACCOUNT_NOT_VALIDATED')
+            }
 
             const { password: p, ...safeUser } = user
             return { feedback: new Feedback(true), user: safeUser }
@@ -88,6 +94,23 @@ class UserService {
                 throw new Error(error.message)
             throw new Error('DATABASE_ERROR')
         }
+    }
+
+    // Envia um email para validar a conta do usuário
+    async sendEmailToValidateAccount(userId: string, addressee: string) {
+        const emailToken = tokenHandler.generateToken({ id: userId }, { expiresIn: '1h' })
+            const link = `${process.env.URL}/user/validation/${emailToken}`
+            const emailController = new EmailController()
+            emailController.transporter.sendMail({
+                from: `Buddy<${emailController.mailAddress}>`,
+                to: addressee,
+                subject: 'Confirme sua conta',
+                html: `<p>Olá</p>
+                <p>Para validar sua conta clique <a href='${link}'>aqui</a></p>
+                <p><strong>
+                    Caso não seja você quem criou a conta, ignore essa mensagem
+                </strong></p>`
+            })
     }
 }
 
