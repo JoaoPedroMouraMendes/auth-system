@@ -76,21 +76,9 @@ class UserController {
             const newUser = await userService.createUser({
                 name, email, password: hashedPassword
             })
-
+            
             // Envia um email para validar a conta
-            const emailToken = tokenHandler.generateToken({ id: newUser.id }, { expiresIn: '1h' })
-            const link = `${process.env.URL}/user/validation/${emailToken}`
-            const emailController = new EmailController()
-            emailController.transporter.sendMail({
-                from: `Buddy<${emailController.mailAddress}>`,
-                to: email,
-                subject: 'Confirme sua conta',
-                html: `<p>Olá</p>
-                <p>Para validar sua conta clique <a href='${link}'>aqui</a></p>
-                <p><strong>
-                    Caso não seja você quem criou a conta, ignore essa mensagem
-                </strong></p>`
-            })
+            userService.sendEmailToValidateAccount(newUser.id, newUser.email)
 
             const sectionToken = tokenHandler.generateToken({ email: newUser.email, password: newUser.password })
             return res.status(201).json({ feedback: new Feedback(true), token: sectionToken })
