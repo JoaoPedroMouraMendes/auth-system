@@ -3,11 +3,9 @@ import userService from "../services/userService"
 import passwordValidator from "../validators/passwordValidator"
 import Feedback from "../utils/feedback"
 import emailValidator from "../validators/emailValidator"
-import EmailController from "../email/emailController"
 import encryptData from "../security/encryptData"
 import dotenv from "dotenv"
 import tokenHandler from "../security/tokenHandler"
-import bcrypt from "bcrypt"
 
 dotenv.config()
 
@@ -28,7 +26,6 @@ class UserController {
         try {
             const userId = req.params.id
             const user = await userService.getUser({ id: userId })
-
             if (!user)
                 return res.status(404).json({ feedback: new Feedback(false, ['USER_NOT_FOUND']) })
 
@@ -76,7 +73,7 @@ class UserController {
             const newUser = await userService.createUser({
                 name, email, password: hashedPassword
             })
-            
+
             // Envia um email para validar a conta
             userService.sendEmailToValidateAccount(newUser.id, newUser.email)
 
@@ -98,7 +95,7 @@ class UserController {
                 if (error) return res.status(400).json
                     ({ feedback: new Feedback(false, ['INVALID_TOKEN']) })
 
-                await userService.updateUserData(decoded.id, { validatedAccount: true })
+                await userService.updateUserData({ id: decoded.id }, { validatedAccount: true })
                 return res.status(200).json({ feedback: new Feedback(true) })
             } catch (error) {
                 console.error(`Erro ao tentar validar conta de usuário: ${error}`)
@@ -143,19 +140,15 @@ class UserController {
     // Validação de acesso por token
     async userLoginWithToken(req: Request, res: Response): Promise<Response | void> {
         try {
-            const authorization = req.headers['authorization']
-            if (!authorization)
-                throw new Error('EMPTY_AUTHORIZATION')
-            const token = authorization.split(' ')[1]
-            if (!token)
-                throw new Error('EMPTY_TOKEN')
+            const authorization = req.headers['authorization'] as string
+            const token = tokenHandler.extractAuthToken(authorization)
             tokenHandler.verifyToken(token, async (error, decoded: any) => {
                 try {
                     if (error)
                         throw new Error('INVALID_TOKEN')
 
                     const { feedback, user } = await userService.userLogin(decoded.email, decoded.password, true)
-                    
+
                     return res.status(200).json({ feedback: feedback, user })
                 } catch (error) {
                     console.log(`Erro ao verificar o login de usuário com token: ${error}`)
@@ -163,7 +156,7 @@ class UserController {
                     if (error instanceof Error)
                         return res.status(400).json
                             ({ feedback: new Feedback(false, [error.message]) })
-    
+
                     return res.status(400).json
                         ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
                 }
@@ -176,6 +169,73 @@ class UserController {
 
             return res.status(500).json({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
+    }
+
+    // Envia link para alteração do password
+    async sendEmailToUpdatePassword(req: Request, res: Response): Promise<Response | void> {
+        try {
+            const email = req.body.email as string
+            const emailFeedback = emailValidator(email)
+            if (!emailFeedback.success) 
+                return res.status(400).json({ feedback: emailFeedback })
+            await userService.getUser({ email })
+            await userService.sendEmailToUpdatePassword(email)
+            return res.status(200).json({ feedback: new Feedback(true) })
+        } catch (error) {
+            console.log(`Erro ao tentar envia email para troca de password: ${error}`)
+
+            if (error instanceof Error)
+                return res.status(400).json
+                    ({ feedback: new Feedback(false, [error.message]) })
+
+            return res.status(400).json
+                ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
+        }
+    }
+
+    // Muda a senha do usuário
+    async updatePassword(req: Request, res: Response): Promise<Response | void> {
+        try {
+            const token = req.params.token as string
+            tokenHandler.verifyToken(token, async (error, decoded: any) => {
+                try {
+                    if (error)
+                        throw new Error('INVALID_TOKEN')
+
+                    const newPassword = req.body.password as string
+                    const passwordFeedback = passwordValidator(newPassword)
+                    if (!passwordFeedback.success) 
+                        return res.status(400).json({ feedback: passwordFeedback })
+                    
+                    const hashedPassword = await encryptData(newPassword)
+                    await userService.updateUserData({ id: decoded.id, email: decoded.email }, { password: hashedPassword })
+                    return res.status(200).json({ feedback: new Feedback(true) })
+                } catch (error) {
+                    console.log(`Erro ao trocar a senha do usuário: ${error}`)
+
+                    if (error instanceof Error)
+                        return res.status(400).json
+                            ({ feedback: new Feedback(false, [error.message]) })
+
+                    return res.status(400).json
+                        ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
+                }
+            })
+        } catch (error) {
+            console.log(`Erro ao trocar a senha do usuário: ${error}`)
+
+            if (error instanceof Error)
+                return res.status(400).json
+                    ({ feedback: new Feedback(false, [error.message]) })
+
+            return res.status(400).json
+                ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
+        }
+    }
+
+    async sendPageToUpdatePassword(req: Request, res: Response) {
+        const token = req.params.token as string
+        res.render('update-password', { token, URL: process.env.URL })
     }
 }
 

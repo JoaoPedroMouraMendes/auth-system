@@ -7,6 +7,8 @@ export default function passwordValidator(password: string): Feedback {
     const minUniqueLetters = 3
     const errors: string[] = []
 
+    if (!password)
+        return new Feedback(false, ['UNDEFINED_PASSWORD'])
     if (password.length < minChars)
         errors.push('PASSWORD_TOO_SHORT')
     if (password.length > maxChars)
