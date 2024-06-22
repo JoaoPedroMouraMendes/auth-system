@@ -11,7 +11,7 @@ route.get('/user/login/token', userController.userLoginWithToken)
 
 route.get('/user/password/generate-token', userController.sendEmailToUpdatePassword)
 
-route.put('/user/password/update/:token', userController.updatePassword)
+route.put('/user/password/update', userController.updatePassword)
 
 route.get('/user/pages/update-password/:token', userController.sendPageToUpdatePassword)
 

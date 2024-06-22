@@ -39,7 +39,7 @@ class UserService {
     }
 
     // Cria o usuário no banco de dados
-    async createUser(data: Omit<User, 'id' | 'created_at' | 'validatedAccount'>) {
+    async createUser(data: Pick<User, 'password' | 'name' | 'email'>) {
         try {
             const newUser = await prismaClient.user.create({ data })
             return newUser
@@ -59,6 +59,8 @@ class UserService {
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023')
                 throw new Error('USER_NOT_FOUND')
+            else if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')
+                throw new Error('INVALID_EMAIL')
 
             throw new Error('DATABASE_ERROR')
         }

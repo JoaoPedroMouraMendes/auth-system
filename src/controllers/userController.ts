@@ -196,7 +196,8 @@ class UserController {
     // Muda a senha do usuário
     async updatePassword(req: Request, res: Response): Promise<Response | void> {
         try {
-            const token = req.params.token as string
+            const authorization = req.headers['authorization'] as string
+            const token = tokenHandler.extractAuthToken(authorization)
             tokenHandler.verifyToken(token, async (error, decoded: any) => {
                 try {
                     if (error)
