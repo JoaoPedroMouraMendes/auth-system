@@ -25,6 +25,7 @@ class UserController {
     async getUser(req: Request, res: Response): Promise<Response | void> {
         try {
             const userId = req.params.id
+            // Obtem o usuário caso exista e o id seja valido
             const user = await userService.getUser({ id: userId })
 
             return res.status(200).json({ feedback: new Feedback(true), user })
@@ -74,7 +75,7 @@ class UserController {
 
             // Envia um email para validar a conta
             userService.sendEmailToValidateAccount(newUser.id, newUser.email)
-
+            // Gera um token para login simplificado
             const sectionToken = tokenHandler.generateToken({ email: newUser.email, password: newUser.password })
             return res.status(201).json({ feedback: new Feedback(true), token: sectionToken })
         } catch (error) {
@@ -85,14 +86,16 @@ class UserController {
         }
     }
 
-    // Valida a conta do usuário por meio de um token
+    // Valida a conta do usuário por meio de um token enviado por email
     async validateUserAccount(req: Request, res: Response): Promise<Response | void> {
         const token = req.params.token
+        // Verifiação de token para validar a conta
         tokenHandler.verifyToken(token, async (error, decoded: any) => {
             try {
+                // Caso tenha erro o token é invalido
                 if (error) return res.status(400).json
                     ({ feedback: new Feedback(false, ['INVALID_TOKEN']) })
-
+                // Valida a conta
                 await userService.updateUserData({ id: decoded.id }, { validatedAccount: true })
                 return res.status(200).json({ feedback: new Feedback(true) })
             } catch (error) {
@@ -111,17 +114,17 @@ class UserController {
     // Verifica se o login do usuário é valido
     async userLogin(req: Request, res: Response): Promise<Response | void> {
         try {
+            // Obtem os dados pelo body e verifica se são validos
             const { email, password } = req.body as UserLoginBody
-            if (!email)
-                throw new Error('EMAIL_IS_REQUIRED')
-            if (typeof email !== 'string')
-                throw new Error('INVALID_EMAIL_TYPE')
-            if (!password)
-                throw new Error('PASSWORD_IS_REQUIRED')
-            if (typeof password !== 'string')
-                throw new Error('INVALID_PASSWORD_TYPE')
-
+            const emailValidation = emailValidator(email)
+            if (!emailValidation.success) 
+                return res.status(400).json({ feedback: emailValidation })
+            const passwordValidation = passwordValidator(password)
+            if (!passwordValidation.success)
+                return res.status(400).json({ feedback: passwordValidation })
+            // Busca o usuário para verificar se os dados estão certos para efetuar o login
             const { feedback, user } = await userService.userLogin(email, password)
+            // Gera um token para login simplificado
             const sectionToken = tokenHandler.generateToken({ email: user.email, password: user.password })
 
             return res.status(200).json({ feedback, user, token: sectionToken })
@@ -138,13 +141,17 @@ class UserController {
     // Validação de acesso por token
     async userLoginWithToken(req: Request, res: Response): Promise<Response | void> {
         try {
+            // Obtem a authorization que acompanha o token
             const authorization = req.headers['authorization'] as string
+            // Extrai o token da authorization
             const token = tokenHandler.extractAuthToken(authorization)
+            // Verifica se token é valido
             tokenHandler.verifyToken(token, async (error, decoded: any) => {
                 try {
+                    // Caso tenha erro o token é invalido
                     if (error)
                         throw new Error('INVALID_TOKEN')
-
+                    // Verifica se os dados do token corresponde ao do usuário
                     const { feedback, user } = await userService.userLogin(decoded.email, decoded.password, true)
 
                     return res.status(200).json({ feedback: feedback, user })
@@ -173,10 +180,13 @@ class UserController {
     async sendEmailToUpdatePassword(req: Request, res: Response): Promise<Response | void> {
         try {
             const email = req.body.email as string
+            // Verifica se o email é valido
             const emailFeedback = emailValidator(email)
             if (!emailFeedback.success)
                 return res.status(400).json({ feedback: emailFeedback })
+            // Verifica se o usuário existe
             await userService.getUser({ email })
+            // Envia um email para o usuário poder trocar a senha
             const token = await userService.sendEmailToUpdatePassword(email)
             return res.status(200).json({ feedback: new Feedback(true), token })
         } catch (error) {
@@ -194,14 +204,19 @@ class UserController {
     // Muda a senha do usuário
     async updatePassword(req: Request, res: Response): Promise<Response | void> {
         try {
+            // Obtem a authorization que acompanha o token
             const authorization = req.headers['authorization'] as string
+            // Extrai o token da authorization
             const token = tokenHandler.extractAuthToken(authorization)
+            // Verifica se token é valido
             tokenHandler.verifyToken(token, async (error, decoded: any) => {
                 try {
+                    // Caso tenha erro o token é invalido
                     if (error)
                         throw new Error('INVALID_TOKEN')
 
                     const newPassword = req.body.password as string
+                    // Verifica se o password é valido
                     const passwordFeedback = passwordValidator(newPassword)
                     if (!passwordFeedback.success)
                         return res.status(400).json({ feedback: passwordFeedback })
@@ -212,7 +227,7 @@ class UserController {
                     // Verifica se o token é o mais atual
                     if (token !== user?.tokenToUpdatePassword)
                         throw new Error('INVALID_TOKEN')
-
+                    // Atualiza a senha no banco de dados
                     await userService.updateUserData({ id: decoded.id, email: decoded.email }, { password: hashedPassword })
                     return res.status(200).json({ feedback: new Feedback(true) })
                 } catch (error) {
@@ -238,6 +253,7 @@ class UserController {
         }
     }
 
+    // Usado para direcionar o usuário para trocar sua senha em uma página web
     async sendPageToUpdatePassword(req: Request, res: Response) {
         const token = req.params.token as string
         res.render('update-password', { token, URL: process.env.URL })
