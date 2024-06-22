@@ -9,13 +9,13 @@ import tokenHandler from "../security/tokenHandler"
 
 dotenv.config()
 
-interface CreateUserProps {
+interface CreateUserBody {
     name: string
     email: string
     password: string
 }
 
-interface UserLoginProps {
+interface UserLoginBody {
     email: string
     password: string
 }
@@ -26,8 +26,6 @@ class UserController {
         try {
             const userId = req.params.id
             const user = await userService.getUser({ id: userId })
-            if (!user)
-                return res.status(404).json({ feedback: new Feedback(false, ['USER_NOT_FOUND']) })
 
             return res.status(200).json({ feedback: new Feedback(true), user })
         } catch (error) {
@@ -45,7 +43,7 @@ class UserController {
     // Cria um novo usuário
     async createUser(req: Request, res: Response): Promise<Response | void> {
         try {
-            const { name, email, password } = req.body as CreateUserProps
+            const { name, email, password } = req.body as CreateUserBody
             // Validação da senha
             const passwordValidation = passwordValidator(password)
             // Validação do email
@@ -113,7 +111,7 @@ class UserController {
     // Verifica se o login do usuário é valido
     async userLogin(req: Request, res: Response): Promise<Response | void> {
         try {
-            const { email, password } = req.body as UserLoginProps
+            const { email, password } = req.body as UserLoginBody
             if (!email)
                 throw new Error('EMAIL_IS_REQUIRED')
             if (typeof email !== 'string')
@@ -176,11 +174,11 @@ class UserController {
         try {
             const email = req.body.email as string
             const emailFeedback = emailValidator(email)
-            if (!emailFeedback.success) 
+            if (!emailFeedback.success)
                 return res.status(400).json({ feedback: emailFeedback })
             await userService.getUser({ email })
-            await userService.sendEmailToUpdatePassword(email)
-            return res.status(200).json({ feedback: new Feedback(true) })
+            const token = await userService.sendEmailToUpdatePassword(email)
+            return res.status(200).json({ feedback: new Feedback(true), token })
         } catch (error) {
             console.log(`Erro ao tentar envia email para troca de password: ${error}`)
 
@@ -205,10 +203,16 @@ class UserController {
 
                     const newPassword = req.body.password as string
                     const passwordFeedback = passwordValidator(newPassword)
-                    if (!passwordFeedback.success) 
+                    if (!passwordFeedback.success)
                         return res.status(400).json({ feedback: passwordFeedback })
-                    
+                    // Ciptografa a senha
                     const hashedPassword = await encryptData(newPassword)
+
+                    const user = await userService.getUser({ id: decoded.id }, { tokenToUpdatePassword: true })
+                    // Verifica se o token é o mais atual
+                    if (token !== user?.tokenToUpdatePassword)
+                        throw new Error('INVALID_TOKEN')
+
                     await userService.updateUserData({ id: decoded.id, email: decoded.email }, { password: hashedPassword })
                     return res.status(200).json({ feedback: new Feedback(true) })
                 } catch (error) {

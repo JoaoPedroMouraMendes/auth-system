@@ -9,6 +9,8 @@ export default function passwordValidator(password: string): Feedback {
 
     if (!password)
         return new Feedback(false, ['UNDEFINED_PASSWORD'])
+    if (typeof password !== 'string')
+        return new Feedback(false, ['INVALID_PASSWORD_TYPE'])
     if (password.length < minChars)
         errors.push('PASSWORD_TOO_SHORT')
     if (password.length > maxChars)

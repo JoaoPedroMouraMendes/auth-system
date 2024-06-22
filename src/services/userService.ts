@@ -16,10 +16,13 @@ class UserService {
     // Obtem um usuário
     async getUser(where: FindUserProps, select?: Prisma.UserSelect): Promise<User | null> {
         try {
-            return await prismaClient.user.findFirst({
+            const user = await prismaClient.user.findFirst({
                 where: where,
                 select: select
             })
+            if (!user)
+                throw new Error('USER_NOT_FOUND')
+            return user
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2023')
                 throw new Error('USER_NOT_FOUND')
@@ -114,11 +117,14 @@ class UserService {
         })
     }
 
+    // Envia um email para o dono da conta poder mudar sua senha
     async sendEmailToUpdatePassword(userEmail: string) {
-        const user = await this.getUser({ email: userEmail }, { id: true, validatedAccount: true }) as Pick<User, 'id' | 'validatedAccount'>
+        try {
+            const user = await this.getUser({ email: userEmail }, { id: true, validatedAccount: true }) as Pick<User, 'id' | 'validatedAccount'>
         if (!user.validatedAccount) throw new Error('ACCOUNT_NOT_VALIDATED')
-        const emailToken = tokenHandler.generateToken({ id: user.id, email: userEmail }, { expiresIn: '1h' })
-        const link = `${process.env.URL}/user/pages/update-password/${emailToken}`
+        const token = tokenHandler.generateToken({ id: user.id, email: userEmail }, { expiresIn: '1h' })
+        await this.updateUserData({ email: userEmail }, { tokenToUpdatePassword: token })
+        const link = `${process.env.URL}/user/pages/update-password/${token}`
         const emailController = new EmailController()
         emailController.transporter.sendMail({
             from: `Auth System<${emailController.mailAddress}>`,
@@ -130,6 +136,13 @@ class UserService {
                     Caso não seja você quem solicitou a mudança de senha, apenas ignore essa mensagem
                 </strong></p>`
         })
+        return token
+        } catch (error) {
+            if (error instanceof Error)
+                throw new Error(error.message)
+
+            throw new Error('DATABASE_ERROR')
+        }
     }
 }
 
