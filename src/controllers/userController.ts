@@ -30,12 +30,11 @@ class UserController {
 
             return res.status(200).json({ feedback: new Feedback(true), user })
         } catch (error) {
-            console.error(`Erro ao tentar encontrar um usuário: ${error}`)
-
             if (error instanceof Error)
                 return res.status(400).json
                     ({ feedback: new Feedback(false, [error.message]) })
 
+            console.error(`Erro ao tentar encontrar um usuário: ${error}`)
             return res.status(500).json
                 ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
@@ -79,8 +78,11 @@ class UserController {
             const sectionToken = tokenHandler.generateToken({ email: newUser.email, password: newUser.password })
             return res.status(201).json({ feedback: new Feedback(true), token: sectionToken })
         } catch (error) {
-            console.error(`Erro ao tentar criar um usuário: ${error}`)
+            if (error instanceof Error)
+                return res.status(400).json
+                    ({ feedback: new Feedback(false, [error.message]) })
 
+            console.error(`Erro ao tentar criar um usuário: ${error}`)
             return res.status(500).json
                 ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
@@ -99,12 +101,11 @@ class UserController {
                 await userService.updateUserData({ id: decoded.id }, { validatedAccount: true })
                 return res.status(200).json({ feedback: new Feedback(true) })
             } catch (error) {
-                console.error(`Erro ao tentar validar conta de usuário: ${error}`)
-
                 if (error instanceof Error && error.message === 'USER_NOT_FOUND')
                     return res.status(404).json
                         ({ feedback: new Feedback(false, ['USER_NOT_FOUND']) })
 
+                console.error(`Erro ao tentar validar conta de usuário: ${error}`)
                 return res.status(400).json
                     ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
             }
@@ -129,11 +130,10 @@ class UserController {
 
             return res.status(200).json({ feedback, user, token: sectionToken })
         } catch (error) {
-            console.log(`Erro ao verificar o login de usuário: ${error}`)
-
             if (error instanceof Error)
                 return res.status(400).json({ feedback: new Feedback(false, [error.message]) })
 
+            console.error(`Erro ao verificar o login de usuário: ${error}`)
             return res.status(500).json({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
     }
@@ -156,22 +156,20 @@ class UserController {
 
                     return res.status(200).json({ feedback: feedback, user })
                 } catch (error) {
-                    console.log(`Erro ao verificar o login de usuário com token: ${error}`)
-
                     if (error instanceof Error)
                         return res.status(400).json
                             ({ feedback: new Feedback(false, [error.message]) })
 
+                    console.error(`Erro ao verificar o login de usuário com token: ${error}`)
                     return res.status(400).json
                         ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
                 }
             })
         } catch (error) {
-            console.log(`Erro ao verificar o login de usuário com token: ${error}`)
-
             if (error instanceof Error)
                 return res.status(400).json({ feedback: new Feedback(false, [error.message]) })
 
+            console.error(`Erro ao verificar o login de usuário com token: ${error}`)
             return res.status(500).json({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
     }
@@ -190,12 +188,11 @@ class UserController {
             const token = await userService.sendEmailToUpdatePassword(email)
             return res.status(200).json({ feedback: new Feedback(true), token })
         } catch (error) {
-            console.log(`Erro ao tentar envia email para troca de password: ${error}`)
-
             if (error instanceof Error)
                 return res.status(400).json
                     ({ feedback: new Feedback(false, [error.message]) })
 
+            console.error(`Erro ao tentar envia email para troca de password: ${error}`)
             return res.status(400).json
                 ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
@@ -231,23 +228,21 @@ class UserController {
                     await userService.updateUserData({ id: decoded.id, email: decoded.email }, { password: hashedPassword })
                     return res.status(200).json({ feedback: new Feedback(true) })
                 } catch (error) {
-                    console.log(`Erro ao trocar a senha do usuário: ${error}`)
-
                     if (error instanceof Error)
                         return res.status(400).json
                             ({ feedback: new Feedback(false, [error.message]) })
 
+                    console.error(`Erro ao trocar a senha do usuário: ${error}`)
                     return res.status(400).json
                         ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
                 }
             })
         } catch (error) {
-            console.log(`Erro ao trocar a senha do usuário: ${error}`)
-
             if (error instanceof Error)
                 return res.status(400).json
                     ({ feedback: new Feedback(false, [error.message]) })
 
+            console.error(`Erro ao trocar a senha do usuário: ${error}`)
             return res.status(400).json
                 ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
