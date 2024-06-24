@@ -43,6 +43,7 @@ h1 {
     height: 25px;
     display: block;
     margin: 5px 0px 5px 0px;
+    padding: 5px;
 
     border-radius: 5px;
     border: none;
@@ -79,4 +80,10 @@ button {
 
 button:active {
     background-color: rgba(0, 0, 0, 0.05);
+}
+
+#sucessFeedback {
+    font-weight: bold;
+    color: var(--color1);
+    text-shadow: 1px 1px 3px black;
 }
