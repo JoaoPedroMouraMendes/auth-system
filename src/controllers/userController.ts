@@ -211,6 +211,10 @@ class UserController {
                     // Caso tenha erro o token é invalido
                     if (error)
                         throw new Error('INVALID_TOKEN')
+                    const user = await userService.getUser({ id: decoded.id }, { tokenToUpdatePassword: true })
+                    // Verifica se o token é o mais atual
+                    if (token !== user?.tokenToUpdatePassword)
+                        throw new Error('INVALID_TOKEN')
 
                     const newPassword = req.body.password as string
                     // Verifica se o password é valido
@@ -219,13 +223,9 @@ class UserController {
                         return res.status(400).json({ feedback: passwordFeedback })
                     // Ciptografa a senha
                     const hashedPassword = await encryptData(newPassword)
-
-                    const user = await userService.getUser({ id: decoded.id }, { tokenToUpdatePassword: true })
-                    // Verifica se o token é o mais atual
-                    if (token !== user?.tokenToUpdatePassword)
-                        throw new Error('INVALID_TOKEN')
                     // Atualiza a senha no banco de dados
-                    await userService.updateUserData({ id: decoded.id, email: decoded.email }, { password: hashedPassword })
+                    await userService.updateUserData({ id: decoded.id, email: decoded.email }, { password: hashedPassword, tokenToUpdatePassword: '' })
+    
                     return res.status(200).json({ feedback: new Feedback(true) })
                 } catch (error) {
                     if (error instanceof Error)
