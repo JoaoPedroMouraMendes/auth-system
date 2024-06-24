@@ -7,10 +7,10 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 // Configurando o diretório de visualizações
-app.set('views', path.join(`${__dirname}/src`, 'views'));
+app.set('views', path.join(__dirname, 'src', 'views'));
 // Configurando o mecanismo de visualização para EJS
 app.set('view engine', 'ejs');
-
+app.use(express.static(path.join(__dirname, 'src', 'public')))
 app.use('/', route)
 
 const PORT = 3000

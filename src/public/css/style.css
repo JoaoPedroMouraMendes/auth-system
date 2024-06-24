@@ -1,0 +1,82 @@
+:root {
+    --bg-color: #024959;
+    --font-color: #012E40;
+    --color0: #026773;
+    --color1: #3CA6A6;
+    --color2: #F2E3D5;
+    --color3: #8f9faf;
+    --warning-color: #c72626;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--font-color);
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--bg-color);
+}
+
+.container {
+    padding: 16px;
+
+    border-radius: 10px;
+    background-color: var(--color3);
+    box-shadow: 0px 4px 5px rgba(0, 0, 0, 0.3);
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+.passInput {
+    width: 80%;
+    height: 25px;
+    display: block;
+    margin: 5px 0px 5px 0px;
+
+    border-radius: 5px;
+    border: none;
+}
+
+.passInput:focus,
+button:focus {
+    outline: 2px solid var(--color2);
+}
+
+label {
+    font-size: 1.1em;
+}
+
+li {
+    list-style: none;
+    color: var(--warning-color);
+}
+
+li+li {
+    margin-top: 5px;
+}
+
+button {
+    margin-top: 5px;
+    padding: 5px;
+    width: 50%;
+    cursor: pointer;
+    background-color: var(--color2);
+
+    border: none;
+    border-radius: 10px;
+}
+
+button:active {
+    background-color: rgba(0, 0, 0, 0.05);
+}

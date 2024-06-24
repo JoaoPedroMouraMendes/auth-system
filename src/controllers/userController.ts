@@ -117,7 +117,7 @@ class UserController {
             // Obtem os dados pelo body e verifica se são validos
             const { email, password } = req.body as UserLoginBody
             const emailValidation = emailValidator(email)
-            if (!emailValidation.success) 
+            if (!emailValidation.success)
                 return res.status(400).json({ feedback: emailValidation })
             const passwordValidation = passwordValidator(password)
             if (!passwordValidation.success)
@@ -256,7 +256,7 @@ class UserController {
     // Usado para direcionar o usuário para trocar sua senha em uma página web
     async sendPageToUpdatePassword(req: Request, res: Response) {
         const token = req.params.token as string
-        res.render('update-password', { token, URL: process.env.URL })
+        res.render('update-password', { token, URL: process.env.URL, })
     }
 }
 
