@@ -106,7 +106,7 @@ class UserController {
                         ({ feedback: new Feedback(false, ['USER_NOT_FOUND']) })
 
                 console.error(`Erro ao tentar validar conta de usuário: ${error}`)
-                return res.status(400).json
+                return res.status(500).json
                     ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
             }
         })
@@ -161,7 +161,7 @@ class UserController {
                             ({ feedback: new Feedback(false, [error.message]) })
 
                     console.error(`Erro ao verificar o login de usuário com token: ${error}`)
-                    return res.status(400).json
+                    return res.status(500).json
                         ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
                 }
             })
@@ -193,7 +193,7 @@ class UserController {
                     ({ feedback: new Feedback(false, [error.message]) })
 
             console.error(`Erro ao tentar envia email para troca de password: ${error}`)
-            return res.status(400).json
+            return res.status(500).json
                 ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
     }
@@ -233,7 +233,7 @@ class UserController {
                             ({ feedback: new Feedback(false, [error.message]) })
 
                     console.error(`Erro ao trocar a senha do usuário: ${error}`)
-                    return res.status(400).json
+                    return res.status(500).json
                         ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
                 }
             })
@@ -243,7 +243,7 @@ class UserController {
                     ({ feedback: new Feedback(false, [error.message]) })
 
             console.error(`Erro ao trocar a senha do usuário: ${error}`)
-            return res.status(400).json
+            return res.status(500).json
                 ({ feedback: new Feedback(false, ['INTERNAL_SERVER_ERROR']) })
         }
     }
